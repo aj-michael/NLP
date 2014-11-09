@@ -1,4 +1,4 @@
-package edu.rosehulman.michael;
+package edu.rosehulman.summarizer;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -32,30 +32,33 @@ public class PreprocessRec {
 		props.setProperty("pos.model","edu/stanford/nlp/models/pos-tagger/english-left3words/english-left3words-distsim.tagger");
 		pipeline = new StanfordCoreNLP(props);
 	}
-
-	public static void main(String[] args) throws IOException {
-		String trainingDataDir = args[0];
-		String outputPath = args[1];
+	
+	public static Counter<String> calcDFCount(String outerTrainingDir) throws IOException {
 		Counter<String> dfCounter = new ClassicCounter<String>();
-		for (File f1 : (new File(trainingDataDir)).listFiles()) {
-			for (File f2 : f1.listFiles()) {
-			String text = IOUtils.slurpFile(f2);
-			Annotation document = new Annotation(text);
-			PreprocessRec.pipeline.annotate(document);
-				List<CoreMap> sentences = document
-						.get(SentencesAnnotation.class);
+		for (File category : (new File(outerTrainingDir)).listFiles()) {
+			for (File document : category.listFiles()) {
+				String text = IOUtils.slurpFile(document);
+				Annotation annotatedDocument = new Annotation(text);
+				PreprocessRec.pipeline.annotate(annotatedDocument);
+				List<CoreMap> sentences = annotatedDocument.get(SentencesAnnotation.class);
 				Set<String> wordsInDoc = Sets.newHashSet();
 				for (CoreMap sentence : sentences) {
-					for (CoreLabel token : sentence.get(TokensAnnotation.class)) {
-						wordsInDoc.add(token.getString(TextAnnotation.class));
+					for (CoreLabel word : sentence.get(TokensAnnotation.class)) {
+						wordsInDoc.add(word.getString(TextAnnotation.class));
 					}
 				}
 				for (String word : wordsInDoc) {
 					dfCounter.incrementCount(word);
 				}
-				dfCounter.incrementCount("numDocuments");
 			}
 		}
+		return dfCounter;
+	}
+
+	public static void main(String[] args) throws IOException {
+		String trainingDataDir = args[0];
+		String outputPath = args[1];
+		Counter<String> dfCounter = calcDFCount(trainingDataDir);
 		ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(outputPath));
 		stream.writeObject(dfCounter);
 		stream.close();

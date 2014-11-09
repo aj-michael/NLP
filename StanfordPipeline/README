@@ -1,0 +1,6 @@
+Hey Ben, if you're reading this, just a heads up:
+
+This stuff only compiles with Java 8 unless we rebuild the Stanford jars from scratch and I don't have the source for that. I think some of them aren't open source. Anyways, if you don't have Java 8: it's not hard. You can figure it out. Or ask Dan.
+
+Also, I think this is a good route for our project. It's interesting but not too difficult to implement. Hopefully we can get 2-3 different implementations going and compare the results.
+
