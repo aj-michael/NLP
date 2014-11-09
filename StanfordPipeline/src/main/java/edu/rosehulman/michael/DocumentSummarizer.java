@@ -41,7 +41,7 @@ public class DocumentSummarizer {
 
 	public DocumentSummarizer(Counter<String> dfCounter) {
 		this.dfCounter = dfCounter;
-		this.numDocuments = (int) dfCounter.getCount("__all__");
+		this.numDocuments = (int) dfCounter.getCount("numDocuments");
 	}
 	
 	public String summarize(String document, int numSentences) {
@@ -85,7 +85,7 @@ public class DocumentSummarizer {
 			List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
 			for (CoreLabel cl : tokens) {
 				String pos = cl.getString(CoreAnnotations.PartOfSpeechAnnotation.class);
-				boolean isNoun = pos.startsWith("n");
+				boolean isNoun = pos.startsWith("n") || pos.startsWith("N");
 				if (isNoun) {
 					String text = cl.getString(CoreAnnotations.TextAnnotation.class);
 					if (dfCounter.getCount(text) != 0) {
@@ -120,6 +120,7 @@ public class DocumentSummarizer {
 		Counter<String> dfCounter = (Counter<String>) stream.readObject();
 		
 		DocumentSummarizer summarizer = new DocumentSummarizer(dfCounter);
+		System.out.println(summarizer.numDocuments);
 		String result = summarizer.summarize(content, 2);
 		System.out.println(result);
 	}
