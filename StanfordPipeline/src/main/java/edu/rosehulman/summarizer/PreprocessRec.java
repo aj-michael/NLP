@@ -33,8 +33,8 @@ public class PreprocessRec {
 		pipeline = new StanfordCoreNLP(props);
 	}
 	
-	public static Counter<String> calcDFCount(String outerTrainingDir) throws IOException {
-		Counter<String> dfCounter = new ClassicCounter<String>();
+	public static Counter<String> calcDF(String outerTrainingDir) throws IOException {
+		Counter<String> df = new ClassicCounter<String>();
 		for (File category : (new File(outerTrainingDir)).listFiles()) {
 			for (File document : category.listFiles()) {
 				String text = IOUtils.slurpFile(document);
@@ -48,19 +48,19 @@ public class PreprocessRec {
 					}
 				}
 				for (String word : wordsInDoc) {
-					dfCounter.incrementCount(word);
+					df.incrementCount(word);
 				}
 			}
 		}
-		return dfCounter;
+		return df;
 	}
 
 	public static void main(String[] args) throws IOException {
 		String trainingDataDir = args[0];
 		String outputPath = args[1];
-		Counter<String> dfCounter = calcDFCount(trainingDataDir);
+		Counter<String> df = calcDF(trainingDataDir);
 		ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(outputPath));
-		stream.writeObject(dfCounter);
+		stream.writeObject(df);
 		stream.close();
 	}
 
