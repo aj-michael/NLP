@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Properties;
+
 import edu.stanford.nlp.io.IOUtils;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
@@ -36,7 +37,7 @@ public class DocumentSummarizer {
 		pipeline = new StanfordCoreNLP(props);
 	}
 
-	public DocumentSummarizer(Counter<String> df) {
+	public DocumentSummarizer(Counter<String> df) throws Exception {
 		this.df = df;
 		this.numDocuments = (int) df.getCount("numDocuments");
 	}
@@ -44,8 +45,14 @@ public class DocumentSummarizer {
 	public String summarize(String document, int numSentences) {
 		Annotation annotation = pipeline.process(document);
 		List<CoreMap> sentences = annotation.get(CoreAnnotations.SentencesAnnotation.class);
-		Counter<String> TF = calcTF(sentences);
-		sentences = rankSentencesByTFIDF(sentences, TF);
+		//Counter<String> TF = calcTF(sentences);
+		Counter<String> TF = new ClassicCounter<String>();
+		for (CoreMap sentence : sentences) {
+			for (CoreLabel token : sentence.get(CoreAnnotations.TokensAnnotation.class)) {
+				TF.incrementCount(token.get(CoreAnnotations.TextAnnotation.class));
+			}
+		}
+		Collections.sort(sentences, new SentenceComparator(TF));
 		StringBuilder summary = new StringBuilder();
 		for (int i = 0; i < numSentences; i++) {
 			summary.append(sentences.get(i));
@@ -54,58 +61,42 @@ public class DocumentSummarizer {
 		return summary.toString();
 	}
 	
-	public List<CoreMap> rankSentencesByTFIDF(List<CoreMap> sentences, Counter<String> tfs) {
-		Collections.sort(sentences, new SentenceComparator(tfs));
-		return sentences;
-	}
-	
 	private class SentenceComparator implements Comparator<CoreMap> {
-		private final Counter<String> termFrequencies;
 		
-		public SentenceComparator(Counter<String> termFrequencies) {
-			this.termFrequencies = termFrequencies;
+		private final Counter<String> TF;
+		
+		public SentenceComparator(Counter<String> TF) {
+			this.TF = TF;
 		}
 		
-		public int compare(CoreMap map1, CoreMap map2) {
-			return (int) Math.round(score(map2) - score(map1));
-		}
-		
-		private double score(CoreMap sentence) {
-			int index = sentence.get(CoreAnnotations.SentenceIndexAnnotation.class);
-			return calcTFIDF(sentence) * 500.0 / index;
+		public int compare(CoreMap sentence1, CoreMap sentence2) {
+			int index1 = sentence1.get(CoreAnnotations.SentenceIndexAnnotation.class);
+			int index2 = sentence2.get(CoreAnnotations.SentenceIndexAnnotation.class);
+			// sentences closer to the beginning are more important
+			return (int) Math.round(calcTFIDF(sentence2)/index2 - calcTFIDF(sentence1)/index1);
 		}
 		
 		private double calcTFIDF(CoreMap sentence) {
-			double total = 0;
+			double tfidf = 0;
 			List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
 			for (CoreLabel token : tokens) {
 				String pos = token.getString(CoreAnnotations.PartOfSpeechAnnotation.class);
 				if (pos.startsWith("n") || pos.startsWith("N")) {
 					String text = token.getString(CoreAnnotations.TextAnnotation.class);
 					if (df.getCount(text) != 0) {
-						double tf = 1 + Math.log(termFrequencies.getCount(text));
+						double tf = 1 + Math.log(TF.getCount(text));
 						double idf = Math.log(numDocuments / (1 + df.getCount(text)));
-						total += tf*idf;
+						tfidf += tf*idf;
 					}
 				}
 			}
-			return total;
+			return tfidf;
 		}
 
 	}
 	
-	public static Counter<String> calcTF(List<CoreMap> sentences) {
-		Counter<String> frequencies = new ClassicCounter<String>();
-		for (CoreMap sentence : sentences) {
-			for (CoreLabel token : sentence.get(CoreAnnotations.TokensAnnotation.class)) {
-				frequencies.incrementCount(token.get(CoreAnnotations.TextAnnotation.class));
-			}
-		}
-		return frequencies;
-	}
-	
 	@SuppressWarnings("unchecked")
-	public static void main(String[] args) throws IOException, ClassNotFoundException {
+	public static void main(String[] args) throws Exception {
 		String documentPath = args[0];
 		String content = IOUtils.slurpFile(documentPath);
 		
@@ -115,7 +106,6 @@ public class DocumentSummarizer {
 		stream.close();
 		
 		DocumentSummarizer summarizer = new DocumentSummarizer(df);
-		System.out.println(summarizer.numDocuments);
 		String result = summarizer.summarize(content, 2);
 		System.out.println(result);
 	}

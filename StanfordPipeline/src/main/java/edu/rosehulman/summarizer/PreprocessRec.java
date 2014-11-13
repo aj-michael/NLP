@@ -50,6 +50,7 @@ public class PreprocessRec {
 				for (String word : wordsInDoc) {
 					df.incrementCount(word);
 				}
+				df.incrementCount("numDocuments");
 			}
 		}
 		return df;

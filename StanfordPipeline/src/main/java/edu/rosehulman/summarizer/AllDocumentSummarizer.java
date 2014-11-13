@@ -12,7 +12,7 @@ import edu.stanford.nlp.stats.Counter;
 public class AllDocumentSummarizer {
 
 	@SuppressWarnings("unchecked")
-	public static void main(String[] args) throws FileNotFoundException, IOException, ClassNotFoundException {
+	public static void main(String[] args) throws Exception {
 		String modelPath = args[0];
 		String inputDirPath = args[1];
 		String outputDirPath = args[2];
