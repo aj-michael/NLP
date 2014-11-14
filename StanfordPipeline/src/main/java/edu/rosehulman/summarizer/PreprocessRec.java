@@ -4,11 +4,12 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
-import com.google.common.collect.Sets;
+//import com.google.common.collect.Sets;
 
 import edu.stanford.nlp.io.IOUtils;
 import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
@@ -41,7 +42,7 @@ public class PreprocessRec {
 				Annotation annotatedDocument = new Annotation(text);
 				PreprocessRec.pipeline.annotate(annotatedDocument);
 				List<CoreMap> sentences = annotatedDocument.get(SentencesAnnotation.class);
-				Set<String> wordsInDoc = Sets.newHashSet();
+				Set<String> wordsInDoc = new HashSet<String>();
 				for (CoreMap sentence : sentences) {
 					for (CoreLabel word : sentence.get(TokensAnnotation.class)) {
 						wordsInDoc.add(word.getString(TextAnnotation.class));
